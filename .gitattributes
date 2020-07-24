@@ -1,2 +1,2 @@
-*.v4 linguist-language=Shell
-*.v6 linguist-language=Shell
+*.v4 linguist-language=Bash
+*.v6 linguist-language=Bash
