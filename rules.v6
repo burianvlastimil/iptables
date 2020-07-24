@@ -1,0 +1,16 @@
+# Latest revision on 2020-Jul-23
+
+*filter
+
+:INPUT DROP [0:0]
+:FORWARD DROP [0:0]
+:OUTPUT ACCEPT [0:0]
+
+--append INPUT --match conntrack --ctstate NEW --protocol tcp ! --syn --match comment --comment "protection: non-syn packets" --jump DROP
+--append INPUT --match conntrack --ctstate INVALID --match comment --comment "protection: malformed packets" --jump DROP
+--append INPUT --in-interface lo --match comment --comment "loopback: compulsory" --jump ACCEPT
+--append INPUT --protocol ipv6-icmp --match limit --limit 20/second --limit-burst 50 --match comment --comment "icmp: ping, etc." --jump ACCEPT
+--append INPUT --match conntrack --ctstate RELATED,ESTABLISHED --match comment --comment "normal traffic" --jump ACCEPT
+--append INPUT --match conntrack --ctstate NEW --protocol udp --match udp --destination-port 546 --destination fe80::/64 --match comment --comment "dhcp: ipv6 specialty" --jump ACCEPT
+
+COMMIT
