@@ -1,54 +1,12 @@
-# Latest revision on 2021-Aug-17
-
 *filter
-
-:INPUT DROP [0:0]
-:FORWARD DROP [0:0]
-:OUTPUT ACCEPT [0:0]
-
-# known ICMP attacks
---append INPUT --protocol icmp --match u32 ! --u32 "0x4&0x3fff=0x0"     --jump DROP    --match comment --comment "ICMP: fragmented packets"
---append INPUT --protocol icmp --match length --length 1492:65535       --jump DROP    --match comment --comment "ICMP: oversized unfragmented packets"
-
-# known TCP attacks
---append INPUT --protocol tcp --tcp-flags  ALL  NONE                    --jump DROP    --match comment --comment "TCP: NULL scan"
---append INPUT --protocol tcp --tcp-flags  ALL  ALL                     --jump DROP    --match comment --comment "TCP: Xmas scan"
---append INPUT --protocol tcp --tcp-flags  ALL  FIN,URG,PSH             --jump DROP    --match comment --comment "TCP: stealth scan"
---append INPUT --protocol tcp --tcp-flags  ALL  SYN,RST,ACK,FIN,URG     --jump DROP    --match comment --comment "TCP: port scan 1"
---append INPUT --protocol tcp --tcp-flags  SYN,FIN  SYN,FIN             --jump DROP    --match comment --comment "TCP: port scan 2"
---append INPUT --protocol tcp --tcp-flags  FIN,RST  FIN,RST             --jump DROP    --match comment --comment "TCP: port scan 3"
---append INPUT --protocol tcp --tcp-flags  SYN,RST  SYN,RST             --jump DROP    --match comment --comment "TCP: SYN-RST scan"
---append INPUT --protocol tcp --tcp-flags  ACK,URG  URG                 --jump DROP    --match comment --comment "TCP: URG scan"
---append INPUT --protocol tcp --tcp-flags  ALL  SYN,FIN                 --jump DROP    --match comment --comment "TCP: SYN-FIN scan"
---append INPUT --protocol tcp --tcp-flags  ALL  URG,PSH,FIN             --jump DROP    --match comment --comment "TCP: nmap Xmas scan"
---append INPUT --protocol tcp --tcp-flags  ALL  FIN                     --jump DROP    --match comment --comment "TCP: FIN scan"
---append INPUT --protocol tcp --tcp-flags  ALL  URG,PSH,SYN,FIN         --jump DROP    --match comment --comment "TCP: nmap ID scan"
-
-# drop all fragmented packets
---append INPUT --protocol all --fragment                                --jump DROP    --match comment --comment "ALL: fragmented packets"
-
-# drop all other invalid packets
---append INPUT --protocol all --match conntrack --ctstate INVALID       --jump DROP    --match comment --comment "ALL: other invalid packets"
-
-# reject new non-syn TCP packets
---append INPUT --match conntrack --ctstate NEW --protocol tcp ! --syn --match comment --comment "TCP: new non-syn packets" --jump REJECT --reject-with tcp-reset
-
-# loopback
---append INPUT --in-interface lo --match comment --comment "loopback" --jump ACCEPT
-
-# ICMP allow ping
---append INPUT --protocol icmp --icmp-type echo-request --match limit --limit 2/second --limit-burst 5 --match comment --comment "ICMP: allow ping" --jump ACCEPT
-
-# ICMP disallow = send reply anyway, but behave as filtered
-#--append INPUT --protocol icmp --jump REJECT --reject-with icmp-admin-prohibited --match comment --comment "ICMP: disallow"
-
-# SSH local subnet only
---append INPUT --match conntrack --ctstate NEW,ESTABLISHED --protocol tcp --match tcp --destination-port 22 --source 192.168.0.0/24 --match comment --comment "SSH: local subnet" --jump ACCEPT
-
-# SSH global obfuscated
-#--append INPUT --match conntrack --ctstate NEW,ESTABLISHED --protocol tcp --match tcp --destination-port 57329 --match comment --comment "SSH: global obfuscated" --jump ACCEPT
-
-# normal traffic
---append INPUT --match conntrack --ctstate RELATED,ESTABLISHED --match comment --comment "normal traffic" --jump ACCEPT
-
+:INPUT      DROP      [0:0]
+:FORWARD    DROP      [0:0]
+:OUTPUT     ACCEPT    [0:0]
+--append INPUT --in-interface lo --match comment --comment "Allow loopback" --jump ACCEPT
+--append INPUT --match conntrack --ctstate INVALID --match comment --comment "Drop invalid packets" --jump DROP
+--append INPUT --match conntrack --ctstate NEW --protocol tcp ! --syn --match comment --comment "Reject new non-syn TCP" --jump REJECT --reject-with tcp-reset
+--append INPUT --match conntrack --ctstate NEW,ESTABLISHED --protocol tcp --match tcp --destination-port 22 --source 192.168.0.0/24 --match comment --comment "Allow local SSH on default port" --jump ACCEPT
+--append INPUT --protocol icmp --icmp-type echo-request --match limit --limit 2/second --limit-burst 5 --match comment --comment "Allow only ping and within limits" --jump ACCEPT
+--append INPUT --match conntrack --ctstate RELATED,ESTABLISHED --match comment --comment "Normal traffic" --jump ACCEPT
 COMMIT
+# Latest revision on 2022-Feb-25 by Vlastimil Burian (info@vlastimilburian.cz)
