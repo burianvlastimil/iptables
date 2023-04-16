@@ -7,6 +7,6 @@
 --append INPUT --match conntrack --ctstate NEW --protocol tcp ! --syn --match comment --comment "Reject new non-syn TCP" --jump REJECT --reject-with tcp-reset
 --append INPUT --match conntrack --ctstate NEW,ESTABLISHED --protocol tcp --match tcp --destination-port 22 --source 192.168.0.0/24 --match comment --comment "Allow local SSH on default port" --jump ACCEPT
 --append INPUT --protocol icmp --icmp-type echo-request --match limit --limit 2/second --limit-burst 5 --match comment --comment "Allow only ping and within limits" --jump ACCEPT
---append INPUT --match conntrack --ctstate RELATED,ESTABLISHED --match comment --comment "Normal traffic" --jump ACCEPT
+--append INPUT --match conntrack --ctstate RELATED,ESTABLISHED --match comment --comment "Traffic" --jump ACCEPT
 COMMIT
-# Latest revision on 2022-Feb-25 by Vlastimil Burian (info@vlastimilburian.cz)
+# Latest revision on 2023-Feb-23 by Vlastimil Burian (info@vlastimilburian.cz)
